@@ -10,6 +10,8 @@ pub struct BirdPlugin;
 impl Plugin for BirdPlugin {
     fn build(&self, app: &mut App) {
         app.add_event::<BirdEvent>()
+            .init_resource::<FlapSound>()
+            .add_systems(Startup, init)
             .add_systems(OnEnter(GameState::Starting), spawn)
             .add_systems(OnExit(GameState::GameOver), despawn.before(spawn))
             .add_systems(Update, bobble.run_if(in_state(GameState::Starting)))
@@ -19,6 +21,9 @@ impl Plugin for BirdPlugin {
             );
     }
 }
+
+#[derive(Default, Resource)]
+pub struct FlapSound(Handle<AudioSource>);
 
 #[derive(Component)]
 pub struct Bobble(f32);
@@ -37,6 +42,11 @@ pub enum BirdEvent {
 impl Bird {
     pub const X: f32 = -60.;
     pub const SIZE: Vec2 = Vec2::new(32.0, 24.0);
+}
+
+fn init(asset_server: Res<AssetServer>, mut flap_sound: ResMut<FlapSound>) {
+    let handle = asset_server.load("wing.ogg");
+    flap_sound.0 = handle;
 }
 
 fn spawn(mut commands: Commands, asset_server: Res<AssetServer>) {
@@ -69,9 +79,9 @@ fn despawn(mut commands: Commands, query: Query<Entity, With<Bird>>) {
 
 fn update(
     mut commands: Commands,
-    asset_server: Res<AssetServer>,
     mut query: Query<(&mut Bird, &mut Transform)>,
     mut reader: EventReader<BirdEvent>,
+    flap_sound: Res<FlapSound>,
 ) {
     const GRAVITY: f32 = 0.098;
     const ROTATION_DELTA: f32 = 1.5;
@@ -88,7 +98,7 @@ fn update(
         player.rotation = 50.;
 
         commands.spawn(AudioBundle {
-            source: asset_server.load("wing.ogg"),
+            source: flap_sound.0.clone(),
             ..default()
         });
     }
