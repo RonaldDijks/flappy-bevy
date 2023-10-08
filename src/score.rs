@@ -1,4 +1,4 @@
-use bevy::prelude::*;
+use bevy::{audio::VolumeLevel, prelude::*};
 
 use crate::GameState;
 
@@ -23,9 +23,23 @@ fn reset(mut score: ResMut<ScoreRes>) {
     score.0 = 0;
 }
 
-fn on_event(mut score: ResMut<ScoreRes>, mut reader: EventReader<ScoreEvent>) {
+fn on_event(
+    mut commands: Commands,
+    asset_server: Res<AssetServer>,
+    mut score: ResMut<ScoreRes>,
+    mut reader: EventReader<ScoreEvent>,
+) {
     if !reader.is_empty() {
         reader.clear();
         score.0 += 1;
+
+        commands.spawn(AudioBundle {
+            source: asset_server.load("point.ogg"),
+            settings: PlaybackSettings {
+                volume: bevy::audio::Volume::Absolute(VolumeLevel::new(0.5)),
+                ..default()
+            },
+            ..default()
+        });
     }
 }
